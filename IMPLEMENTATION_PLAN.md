@@ -510,6 +510,34 @@ quantization method, dtype, backend, quality score, VRAM, and latency.
 - Local validation completed: `uv sync`, 3 tests passing, and CLI registry
   listing verified. Real model downloads and inference remain for Kaggle.
 
+### Recommended next step
+
+Run the first Kaggle preflight and smoke test before expanding the registry.
+The user should provide the Kaggle setup code/notebook, after which the next
+work should be:
+
+1. Check Python, CUDA, GPU visibility, disk space, and available VRAM.
+2. Install or adapt the locked dependencies without changing the canonical
+   inference settings.
+3. Confirm access to the two candidate model repositories.
+4. Run exactly one Vietnamese prompt on `PhoGPT-4B-Chat` and `Qwen3.5-4B`.
+5. Inspect raw responses, chat-template behavior, load failures, latency,
+   output-token counts, and peak VRAM.
+6. Fix correctness or compatibility issues before adding more models.
+7. Only after the smoke test passes, add the next eligible model tier or
+   benchmark adapter.
+
+The smoke run is a pipeline validation, not a research result. It should not
+be used to draw quality conclusions from a single prompt.
+
+### 2026-08-18 — Kaggle preflight added
+
+- Added `scripts/kaggle_preflight.py` to inspect Python packages, CUDA,
+  visible GPUs, VRAM, `nvidia-smi`, disk space, and optional model-config
+  accessibility before downloading full model weights.
+- The next Kaggle command should be:
+  `uv run python scripts/kaggle_preflight.py --check-models`.
+
 ### Questions for the next discussion turn
 
 1. What parameter boundary should define an SLM in this study: at most 1B,

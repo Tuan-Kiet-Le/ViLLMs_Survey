@@ -13,7 +13,7 @@ from .registry import ModelSpec
 def run_model(model_spec: ModelSpec, prompts: list[dict[str, str]], *, max_new_tokens: int = 128, seed: int = 0) -> list[dict[str, Any]]:
     """Load one model and run all prompts sequentially in canonical mode."""
     import torch
-    from transformers import AutoModelForCausalLM, AutoTokenizer
+    from transformers import AutoModelForCausalLM, AutoModelForImageTextToText, AutoProcessor, AutoTokenizer
 
     torch.manual_seed(seed)
     use_cuda = torch.cuda.is_available()
@@ -24,7 +24,12 @@ def run_model(model_spec: ModelSpec, prompts: list[dict[str, str]], *, max_new_t
 
     load_started = time.perf_counter()
     tokenizer = AutoTokenizer.from_pretrained(model_spec.model_id, trust_remote_code=model_spec.trust_remote_code)
-    model = AutoModelForCausalLM.from_pretrained(
+    processor = None
+    model_loader = AutoModelForCausalLM
+    if model_spec.loader == "image_text_to_text":
+        processor = AutoProcessor.from_pretrained(model_spec.model_id, trust_remote_code=model_spec.trust_remote_code)
+        model_loader = AutoModelForImageTextToText
+    model = model_loader.from_pretrained(
         model_spec.model_id,
         torch_dtype=dtype,
         device_map="auto" if use_cuda else None,
@@ -42,7 +47,9 @@ def run_model(model_spec: ModelSpec, prompts: list[dict[str, str]], *, max_new_t
     records: list[dict[str, Any]] = []
     for prompt in prompts:
         messages = [{"role": "user", "content": prompt["prompt"]}]
-        if getattr(tokenizer, "chat_template", None):
+        if processor is not None:
+            encoded = processor.apply_chat_template(messages, add_generation_prompt=True, return_tensors="pt")
+        elif getattr(tokenizer, "chat_template", None):
             encoded = tokenizer.apply_chat_template(messages, add_generation_prompt=True, return_tensors="pt")
         else:
             encoded = tokenizer(prompt["prompt"], return_tensors="pt").input_ids

@@ -53,6 +53,8 @@ def run_model(model_spec: ModelSpec, prompts: list[dict[str, str]], *, max_new_t
             encoded = tokenizer.apply_chat_template(messages, add_generation_prompt=True, return_tensors="pt")
         else:
             encoded = tokenizer(prompt["prompt"], return_tensors="pt").input_ids
+        if hasattr(encoded, "input_ids"):
+            encoded = encoded.input_ids
         encoded = encoded.to(input_device)
         if use_cuda:
             torch.cuda.synchronize()

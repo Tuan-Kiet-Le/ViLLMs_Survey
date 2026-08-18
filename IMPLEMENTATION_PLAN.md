@@ -7,15 +7,14 @@ building an inference setup for the models listed in
 ## Current context
 
 - Repository: `ViLLMs_Survey`
-- Current repository contents: a minimal `README.md` and the model reference
-  table in `docs/references/ViLLMs.md`.
-- The reference table contains two groups:
-  - Vietnamese or Southeast-Asia-focused models, including Qwen3.5, Gemma,
-    Tiny Aya, Sailor2, SeaLLMs, SEA-LION, PhoGPT, VinaLLaMA, and Vistral.
-  - General multilingual or international baselines, including LFM2.5,
-    Llama 3.2, Phi-4, Ministral 3, MiniCPM4, Falcon-H1, Granite, SmolLM3,
-    DeepSeek-R1 Distill, RecurrentGemma, StableLM 2, and OLMoE.
-- The listed model sizes range from approximately 350M to 7B parameters.
+- The repository includes the user-facing README, the source model reference
+  table in `docs/references/ViLLMs.md`, and a runnable Transformers harness.
+- The runtime registry in `src/villms_inference/registry.py` covers three roles:
+  Vietnamese-specialized, Southeast-Asian/regional multilingual, and general
+  multilingual baselines. It records model IDs, families, roles, size tiers,
+  and model-specific loading or compatibility notes.
+- The registry's standard checkpoints range from approximately 0.5B to 7B
+  parameters; the source reference table remains the research inventory.
 - The goal is to support repeatable inference across multiple models, with
   comparable inputs, generation settings, saved outputs, and measurements.
 
@@ -367,12 +366,10 @@ from one family. Analysis should report both per-model results and summaries
 within size tier and comparison role, so a family with many checkpoints does
 not automatically dominate the conclusions.
 
-The initial smoke-test subset should use two models in the same approximate
-size tier and preferably from different comparison roles. A current candidate
-pair is `PhoGPT-4B-Chat` and `Qwen3.5-4B`, subject to confirming their exact
+The initial smoke-test subset should use selected registry models in comparable
+size tiers and across comparison roles, subject to confirming their exact
 checkpoint identifiers, licenses, chat templates, and availability at the
-experiment date. A third regional model such as a SeaLLMs chat checkpoint can
-be added only if the first two-model path is stable.
+experiment date.
 
 The model table should not be expanded merely because a model is new. New
 models should be added when they fill a family, language, or size-tier gap and
@@ -459,8 +456,8 @@ setup reveals a strong reason to do otherwise.
   the first smoke test.
 - The user is concerned about model selection; the plan now separates the
   full eligible study universe from the small initial smoke-test subset.
-- The current smoke-test candidate is a matched-size Vietnamese-specialized
-  and general multilingual pair: `PhoGPT-4B-Chat` and `Qwen3.5-4B`.
+- The smoke-test candidates are selected from the standard-checkpoint registry
+  by role and size tier.
 - Current model discovery indicates that model cards can distinguish newer and
   deprecated checkpoints within a family, so release status and exact
   revisions must be recorded before final inclusion. For example, the
@@ -490,16 +487,19 @@ methods are also not identical: GPTQ, AWQ, bitsandbytes, and other methods can
 have different memory, speed, and quality characteristics.
 
 Therefore, the first canonical comparison will use a common non-quantized
-configuration where possible. Quantized configurations will be measured as
-separate optimized conditions and reported with their own model format,
-quantization method, dtype, backend, quality score, VRAM, and latency.
+configuration where possible. Quantized configurations (including GGUF and
+AWQ variants) are deferred until the standard-checkpoint workflow is stable;
+they will be measured later as separate optimized conditions and reported with
+their own model format, quantization method, dtype, backend, quality score,
+VRAM, and latency.
 
 ### 2026-08-18 — Basic harness implemented
 
 - Added a `uv`-managed Python project with Transformers, Accelerate, PyTorch,
   and pytest dependencies.
-- Added a registry containing the initial matched-size smoke-test pair:
-  `vinai/PhoGPT-4B-Chat` and `Qwen/Qwen3.5-4B`.
+- Added a standard-checkpoint registry covering Vietnamese-specialized,
+  Southeast-Asian/regional, and general multilingual models across the agreed
+  size tiers, with loading and compatibility notes.
 - Added a JSONL prompt input with one Vietnamese single-turn sample.
 - Added a sequential canonical runner using the official tokenizer/chat
   template, greedy decoding, no quantization, and FP16 on CUDA when available.
@@ -512,20 +512,20 @@ quantization method, dtype, backend, quality score, VRAM, and latency.
 
 ### Recommended next step
 
-Run the first Kaggle preflight and smoke test before expanding the registry.
+Run the first Kaggle preflight and one-prompt smoke test across the registry.
 The user should provide the Kaggle setup code/notebook, after which the next
 work should be:
 
 1. Check Python, CUDA, GPU visibility, disk space, and available VRAM.
 2. Install or adapt the locked dependencies without changing the canonical
    inference settings.
-3. Confirm access to the two candidate model repositories.
-4. Run exactly one Vietnamese prompt on `PhoGPT-4B-Chat` and `Qwen3.5-4B`.
+3. Confirm access to the selected standard-checkpoint repositories.
+4. Run exactly one Vietnamese prompt per selected registry model.
 5. Inspect raw responses, chat-template behavior, load failures, latency,
    output-token counts, and peak VRAM.
-6. Fix correctness or compatibility issues before adding more models.
-7. Only after the smoke test passes, add the next eligible model tier or
-   benchmark adapter.
+6. Fix correctness or compatibility issues before adding benchmark adapters.
+7. Only after the standard-checkpoint smoke test passes, evaluate quantized
+   variants or add benchmark adapters.
 
 The smoke run is a pipeline validation, not a research result. It should not
 be used to draw quality conclusions from a single prompt.
